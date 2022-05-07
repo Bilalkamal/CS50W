@@ -11,17 +11,19 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous">
     </script>
+
     <!-- Google Font Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
-    <title>Google</title>
+    <link rel="icon" type="image/png" href="" />
+    <title>Google Images</title>
 </head>
 
 <body>
     <!-- Header Starts -->
     <div class="header">
         <div class="header__right">
-            <a href="image.html">Images</a>
+            <a href="index.html">Search</a>
             <a href="advanced.html">Advanced</a>
         </div>
     </div>
@@ -34,19 +36,19 @@
         <!-- Search Starts -->
 
         <div class="search">
-            <form action="https://google.com/search">
-                <div class="search__input">
-                    <span class="material-icons"> search </span>
-                    <input type="text" name="q" class="box">
-                    <button class="material-icons"> mic </span>
-                </div>
-                <div class="search__buttons">
-                    <input type="submit" name="btnK" value="Google Search" class="button">
-                    <input type="submit" name="btnI" value="I am Feeling Lucky" class="button">
-                </div>
-            </form>
+            <form method="get" action="http://images.google.com/images"">
+            <div class=" search__input">
+
+                <input type="text" name="q" placeholder="Search for images">
+                <!-- <button class="material-icons"> mic </span> -->
+                <button type="submit" class="material-icons"> search </span>
         </div>
-        <!-- Main Body Ends -->
+        <!-- <div class="search__buttons">
+                <input type="submit" value="Search Images">
+            </div> -->
+        </form>
+    </div>
+    <!-- Main Body Ends -->
 </body>
 
 </html>
