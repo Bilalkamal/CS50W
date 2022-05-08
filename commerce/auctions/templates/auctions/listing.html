@@ -1,0 +1,51 @@
+
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <!-- check if user is logged in -->
+    {% if user.is_authenticated%}
+        {% if watchlist%}
+        <!-- remove from watchlist -->
+        <form action="" method="post">
+            {% csrf_token %}
+            <input type="submit" name ="watchlist_remove" value="Remove from watchlist">
+        </form>
+        {% else %}
+        <!-- add to watchlist -->
+        
+        <form action="" method="post">
+            {% csrf_token %}
+            <input type="submit" name ="watchlist_add" value="Add to watchlist">
+        </form>
+        {% endif %}    
+    {% endif %}
+
+    <br>
+    <h2>{{ listing.title }}</h2>
+    <p> {{ listing.description }}</p>
+    {% if listing.image_url %}
+    <img src="{{ listing.image_url }}" alt="">
+    {% endif %}
+    <br>
+    <ul><li>Category: {{ listing.category }}</li></ul>
+    <h6>Seller: {{ listing.seller }}</h6>
+    <p>Publish Date: {{ listing.date }}</p>
+    <p>Listing Expiry Date: {{ listing.expiry_date }}</p>
+    <br>
+    {% if active %}
+        {% if bidder %}
+            <h4>Current Price: {{ listing.price }}</h4>
+            <p>Highest Bidder: {{ bidder }}</p>
+        {% endif %}
+    {% else %}
+        {% if sold %}
+            <h4> Sold for ${{ listing.price }} to {{ listing.highest_bidder }}</h4>
+        {% else %}
+            <h4>This item was not sold.</h4>
+        {% endif %}
+
+    {% endif %}
+
+    
+
+{% endblock %}
