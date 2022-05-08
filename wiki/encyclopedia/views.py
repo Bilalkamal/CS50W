@@ -13,6 +13,7 @@ def index(request):
     return render(request, "encyclopedia/index.html", {
         "entries": util.list_entries()
     })
+    
 def entry(request, title):
     if not util.get_entry(title.capitalize()):
         return render(request, "encyclopedia/error.html", {
