@@ -1,0 +1,61 @@
+{% extends "network/layout.html" %}
+{% load static %}
+{% block body %}
+<div class="container" id="posts-view">
+
+    {% if user.is_authenticated %}
+    <div id="new-post">
+        <br>
+
+        <form id="new-post-form">
+            <div class="form-group">
+                {% csrf_token %}
+                <textarea class="form-control" id="new-post-text" rows="3"
+                    placeholder="What's on your mind?"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary float-right">Post</button>
+            <br>
+        </form>
+    </div>
+    <hr>
+    {% endif %}
+    <div id="posts-section">
+
+    </div>
+
+
+</div>
+
+<div class="container" id="profile-view">
+
+</div>
+
+<div class="container" id="follow-view">
+
+</div>
+<div class="container" id="post-view">
+    {% if user.is_authenticated %}
+    <div id="edit-post">
+        <br>
+        <h1>TODO: Check if user is the owner</h1>
+        <h2>Edit Post</h2>
+        <form id="edit-post-form">
+            <div class="form-group">
+                {% csrf_token %}
+                <textarea class="form-control" id="new-post-text" rows="3"
+                    placeholder="What's on your mind?"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Post</button>
+            <br>
+        </form>
+    </div>
+    <hr>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+{% block script %}
+<script src="{% static 'network/network.js' %}"></script>
+{% endblock %}
