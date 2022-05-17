@@ -1,10 +1,41 @@
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+import json
 
-from .models import User
+from .models import User, Post, Like, Follow
+
+
+@login_required
+@csrf_exempt
+def get_all_posts(request):
+    posts = Post.objects.all().order_by('-created_at')
+    posts = [post.serialize() for post in posts]
+    # get the count of likes for each post
+    posts = [{
+        **post,
+        'likes': len(Like.objects.filter(post=post['id']))
+    } for post in posts]
+    return JsonResponse(posts, safe=False)
+
+
+@login_required
+@csrf_exempt
+def create_post(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required."}, status=400)
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required."}, status=400)
+    data = json.loads(request.body)
+    post = data.get("post", "")
+    post = Post.objects.create(
+        author=request.user, content=post)
+    post.save()
+    return JsonResponse({"message": "success"})
 
 
 def index(request):
@@ -38,6 +69,9 @@ def logout_view(request):
 
 
 def register(request):
+    if request.user.is_authenticated:
+        return HttpResponseRedirect(reverse("index"))
+
     if request.method != "POST":
         return render(request, "network/register.html")
     username = request.POST["username"]
