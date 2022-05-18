@@ -12,6 +12,25 @@ from .models import User, Post, Like, Follow
 
 @login_required(login_url='login')
 @csrf_exempt
+def like_post(request, post_id):
+    # try to get the post id from the database
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return JsonResponse({"error": "Post not found."}, status=404)
+    liked = Like.objects.filter(user=request.user, post=post).exists()
+    # get like count of that post
+    likes_count = Like.objects.filter(post=post).count()
+    if liked:
+        Like.objects.filter(user=request.user, post=post).delete()
+        return JsonResponse({"liked": False, "likes_count": likes_count-1}, status=200)
+    else:
+        Like.objects.create(user=request.user, post=post)
+        return JsonResponse({"liked": True, "likes_count": likes_count+1}, status=200)
+
+
+@login_required(login_url='login')
+@csrf_exempt
 def get_profile(request, username=None):
     # if the user is not provided then use the current user
     if not username:
@@ -29,6 +48,9 @@ def get_profile(request, username=None):
         **post,
         'likes': len(Like.objects.filter(post=post['id']))
     } for post in posts]
+    # for each post find if the user has liked it
+    posts = [{**post, 'liked': Like.objects.filter(
+        user=request.user, post=post['id']).exists()} for post in posts]
 
     followers = Follow.objects.filter(followed_user=user).count()
     following = Follow.objects.filter(follower=user).count()
@@ -58,9 +80,9 @@ def get_following_posts(request):
     # get the list of users the current user is following
     following = [follower.follower.id for follower in Follow.objects.filter(
         followed_user=user)]
+    following.append(user.id)
     # find posts for the users the current user is following
     posts = Post.objects.filter(author__in=following)
-    print(posts)
 
     posts = [post.serialize() for post in posts]
     # get the count of likes for each post
@@ -68,6 +90,10 @@ def get_following_posts(request):
         **post,
         'likes': len(Like.objects.filter(post=post['id']))
     } for post in posts]
+    # for each post find if the user has liked it
+    posts = [{**post, 'liked': Like.objects.filter(
+        user=request.user, post=post['id']).exists()} for post in posts]
+    print(posts)
     return JsonResponse(posts, safe=False)
 
 
@@ -81,6 +107,8 @@ def get_all_posts(request):
         **post,
         'likes': len(Like.objects.filter(post=post['id']))
     } for post in posts]
+    posts = [{**post, 'liked': Like.objects.filter(
+        user=request.user, post=post['id']).exists()} for post in posts]
     return JsonResponse(posts, safe=False)
 
 
