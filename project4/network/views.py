@@ -12,8 +12,33 @@ from .models import User, Post, Like, Follow
 
 @login_required(login_url='login')
 @csrf_exempt
+def follow_user(request, username):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required."}, status=400)
+    user = request.user
+    user_to_follow = User.objects.get(username=username)
+    print(user_to_follow)
+    if user == user_to_follow:
+        return JsonResponse({"error": "Cannot follow self."}, status=400)
+    followers_count = Follow.objects.filter(
+        followed_user=user_to_follow).count()
+
+    followed = Follow.objects.filter(
+        follower=user, followed_user=user_to_follow).exists()
+    if followed:
+        Follow.objects.filter(
+            follower=user, followed_user=user_to_follow).delete()
+        return JsonResponse({"followed": False, "followers_count": followers_count-1}, status=200)
+    # create a new follow
+    Follow.objects.create(follower=user, followed_user=user_to_follow)
+    return JsonResponse({"followed": True, "followers_count": followers_count+1}, status=200)
+
+
+@login_required(login_url='login')
+@csrf_exempt
 def like_post(request, post_id):
-    # try to get the post id from the database
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required."}, status=400)
     try:
         post = Post.objects.get(id=post_id)
     except Post.DoesNotExist:
@@ -32,15 +57,12 @@ def like_post(request, post_id):
 @login_required(login_url='login')
 @csrf_exempt
 def get_profile(request, username=None):
-    # if the user is not provided then use the current user
     if not username:
         username = request.user.username
-    # if the user is not found then return to the index page
     try:
         user = User.objects.get(username=username)
     except Exception:
         return HttpResponseRedirect(reverse("index"))
-    # get the data for the user
     posts = Post.objects.filter(author=user)
     posts_count = posts.count()
     posts = [post.serialize() for post in posts]
@@ -48,19 +70,24 @@ def get_profile(request, username=None):
         **post,
         'likes': len(Like.objects.filter(post=post['id']))
     } for post in posts]
-    # for each post find if the user has liked it
     posts = [{**post, 'liked': Like.objects.filter(
         user=request.user, post=post['id']).exists()} for post in posts]
 
     followers = Follow.objects.filter(followed_user=user).count()
     following = Follow.objects.filter(follower=user).count()
+
+    # check if the current user is following the user
+    followed = Follow.objects.filter(
+        follower=request.user, followed_user=user).exists()
+
     context = {
         "author": user.serialize(),
         "posts": posts,
         "followers": followers,
         "following": following,
         "posts_count": posts_count,
-        "owner": request.user.username == username
+        "owner": request.user.username == username,
+        "followed": followed,
     }
     return render(request, "network/profile.html", context)
 
