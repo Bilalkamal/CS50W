@@ -12,6 +12,30 @@ from .models import User, Post, Like, Follow
 
 @login_required
 @csrf_exempt
+def get_profile(request, username):
+    if request.method != "GET":
+        return JsonResponse({"error": "HTTP method not allowed."}, status=405)
+    user = User.objects.get(username=username)
+    # get the posts of the user
+    posts = Post.objects.filter(author=user)
+    # get his followers
+    followers = Follow.objects.filter(follower=user).count()
+    # get who he follows
+    following = Follow.objects.filter(followed_user=user).count()
+    # get the count
+    posts_count = posts.count()
+    # return the user, his posts, followers and who he follows
+    return JsonResponse({
+        "user": user.serialize(),
+        "posts": [post.serialize() for post in posts],
+        "followers": followers,
+        "following": following,
+        "posts_count": posts_count
+    })
+
+
+@login_required
+@csrf_exempt
 def get_all_posts(request):
     posts = Post.objects.all().order_by('-created_at')
     posts = [post.serialize() for post in posts]
