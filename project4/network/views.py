@@ -12,12 +12,30 @@ from .models import User, Post, Like, Follow
 
 @login_required(login_url='login')
 @csrf_exempt
-def follow_user(request, username):
+def edit_post(request, post_id):
+    if request.method != "POST":
+        return HttpResponseRedirect(reverse("index"))
+    try:
+        post = Post.objects.get(pk=post_id)
+    except Post.DoesNotExist:
+        return JsonResponse({"error": "Post does not exist."}, status=404)
+    if post.author != request.user:
+        return JsonResponse({"error": "You do not have permission to edit this post."}, status=403)
+
+    data = json.loads(request.body)
+    new_content = data.get("new_content", "")
+    post.content = new_content
+    post.save()
+    return JsonResponse({"success": True}, status=200)
+
+
+@login_required(login_url='login')
+@csrf_exempt
+def follow_user(request, username):  # sourcery skip: use-named-expression
     if request.method != "POST":
         return JsonResponse({"error": "POST request required."}, status=400)
     user = request.user
     user_to_follow = User.objects.get(username=username)
-    print(user_to_follow)
     if user == user_to_follow:
         return JsonResponse({"error": "Cannot follow self."}, status=400)
     followers_count = Follow.objects.filter(
@@ -72,6 +90,9 @@ def get_profile(request, username=None):
     } for post in posts]
     posts = [{**post, 'liked': Like.objects.filter(
         user=request.user, post=post['id']).exists()} for post in posts]
+    # if the user is the owner of a post, add add a key and value of "edit" to the post
+    posts = [{**post, 'editable': post['author'] == request.user.username}
+             for post in posts]
 
     followers = Follow.objects.filter(followed_user=user).count()
     following = Follow.objects.filter(follower=user).count()
@@ -120,7 +141,8 @@ def get_following_posts(request):
     # for each post find if the user has liked it
     posts = [{**post, 'liked': Like.objects.filter(
         user=request.user, post=post['id']).exists()} for post in posts]
-    print(posts)
+    posts = [{**post, 'editable': post['author'] == request.user.username}
+             for post in posts]
     return JsonResponse(posts, safe=False)
 
 
@@ -136,6 +158,8 @@ def get_all_posts(request):
     } for post in posts]
     posts = [{**post, 'liked': Like.objects.filter(
         user=request.user, post=post['id']).exists()} for post in posts]
+    posts = [{**post, 'editable': post['author'] == request.user.username}
+             for post in posts]
     return JsonResponse(posts, safe=False)
 
 
@@ -155,7 +179,6 @@ def create_post(request):
 
 
 def index(request):
-    # if the user is not logged in redirect them to the login page
     return render(request, "network/index.html") if request.user.is_authenticated else HttpResponseRedirect(reverse("login"))
 
 
