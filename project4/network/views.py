@@ -10,28 +10,65 @@ import json
 from .models import User, Post, Like, Follow
 
 
-@login_required
+@login_required(login_url='login')
 @csrf_exempt
-def get_profile(request, username):
-    if request.method != "GET":
-        return JsonResponse({"error": "HTTP method not allowed."}, status=405)
-    user = User.objects.get(username=username)
-    # get the posts of the user
+def get_profile(request, username=None):
+    # if the user is not provided then use the current user
+    if not username:
+        username = request.user.username
+    # if the user is not found then return to the index page
+    try:
+        user = User.objects.get(username=username)
+    except Exception:
+        return HttpResponseRedirect(reverse("index"))
+    # get the data for the user
     posts = Post.objects.filter(author=user)
-    # get his followers
-    followers = Follow.objects.filter(follower=user).count()
-    # get who he follows
-    following = Follow.objects.filter(followed_user=user).count()
-    # get the count
     posts_count = posts.count()
-    # return the user, his posts, followers and who he follows
-    return JsonResponse({
-        "user": user.serialize(),
-        "posts": [post.serialize() for post in posts],
+    posts = [post.serialize() for post in posts]
+    posts = [{
+        **post,
+        'likes': len(Like.objects.filter(post=post['id']))
+    } for post in posts]
+
+    followers = Follow.objects.filter(followed_user=user).count()
+    following = Follow.objects.filter(follower=user).count()
+    context = {
+        "author": user.serialize(),
+        "posts": posts,
         "followers": followers,
         "following": following,
-        "posts_count": posts_count
-    })
+        "posts_count": posts_count,
+        "owner": request.user.username == username
+    }
+    return render(request, "network/profile.html", context)
+
+
+@login_required
+@csrf_exempt
+def get_following(request):
+    return render(request, "network/following.html")
+
+
+@login_required
+@csrf_exempt
+def get_following_posts(request):
+    # get posts for the users the current user is following
+    username = request.user.username
+    user = User.objects.get(username=username)
+    # get the list of users the current user is following
+    following = [follower.follower.id for follower in Follow.objects.filter(
+        followed_user=user)]
+    # find posts for the users the current user is following
+    posts = Post.objects.filter(author__in=following)
+    print(posts)
+
+    posts = [post.serialize() for post in posts]
+    # get the count of likes for each post
+    posts = [{
+        **post,
+        'likes': len(Like.objects.filter(post=post['id']))
+    } for post in posts]
+    return JsonResponse(posts, safe=False)
 
 
 @login_required
